@@ -35,7 +35,7 @@ namespace HTTP
         std::string GetPath();
         double GetVersion();
         std::map<std::string, std::string> GetHeaders();
-        std::string GetMessage();
+        std::string GetMsg();
 
         void SetRaw(std::string _rawStr);
         void SetType(RequestType _reqType);
@@ -67,7 +67,7 @@ namespace HTTP
         short GetCode();
         double GetVersion();
         std::map<std::string, std::string> GetHeaders();
-        std::string GetMessage();
+        std::string GetMsg();
 
         void SetRaw(std::string _rawStr);
         void SetCode(short _code);

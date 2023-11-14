@@ -21,6 +21,11 @@ namespace HTTP
         int headerKeyStartPos, headerKeyEndPos;
         int headerValueStartPos, headerValueEndPos;
 
+        if (m_rawStr == "")
+        {
+            return;
+        }
+
         // Convert LF to CRLF
         for (int i = 0; i < m_rawStr.length(); i++)
         {
@@ -279,7 +284,7 @@ namespace HTTP
         return m_headers;
     }
 
-    std::string Request::GetMessage()
+    std::string Request::GetMsg()
     {
         return m_message;
     }
@@ -528,7 +533,7 @@ namespace HTTP
         return m_headers;
     }
 
-    std::string Response::GetMessage()
+    std::string Response::GetMsg()
     {
         return m_message;
     }
