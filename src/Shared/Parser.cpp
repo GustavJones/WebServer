@@ -24,7 +24,7 @@ namespace HTTP
         // Convert LF to CRLF
         for (int i = 0; i < m_rawStr.length(); i++)
         {
-            if (m_rawStr[i] == '\n' and m_rawStr[i - 1] != '\r')
+            if (m_rawStr[i] == '\n' && m_rawStr[i - 1] != '\r')
             {
                 m_rawStr.insert(i, "\r");
             }
@@ -54,12 +54,12 @@ namespace HTTP
             }
 
             i++;
-        } while (m_rawStr[i - 1] == ' ' or m_rawStr[i - 1] == '\n' or m_rawStr[i - 1] == '\r');
+        } while (m_rawStr[i - 1] == ' ' || m_rawStr[i - 1] == '\n' || m_rawStr[i - 1] == '\r');
 
         // Get URI start position
         while (true)
         {
-            if (m_rawStr[i] == '/' or m_rawStr.substr(i, 4) == "http")
+            if (m_rawStr[i] == '/' || m_rawStr.substr(i, 4) == "http")
             {
                 uriStartPos = i;
                 break;
@@ -67,14 +67,14 @@ namespace HTTP
             i++;
         }
 
-        // Get HTTP Version start and end position
+        // Get HTTP Version start && end position
         while (true)
         {
             if (m_rawStr.substr(i, 5) == "HTTP/")
             {
                 httpStartPos = i;
                 int temp = i;
-                while (m_rawStr[temp] != ' ' and m_rawStr[temp] != '\r' and m_rawStr[temp + 1] != '\n')
+                while (m_rawStr[temp] != ' ' && m_rawStr[temp] != '\r' && m_rawStr[temp + 1] != '\n')
                 {
                     temp++;
                 }
@@ -133,9 +133,9 @@ namespace HTTP
                 }
 
                 // Check if new header line
-                if (line[0] != ' ' or line.find(':') != -1)
+                if (line[0] != ' ' || line.find(':') != -1)
                 {
-                    // Get Header Key start and end pos
+                    // Get Header Key start && end pos
                     int temp = 0;
                     while (line[temp] == ' ')
                     {
@@ -144,15 +144,15 @@ namespace HTTP
 
                     headerKeyStartPos = temp;
 
-                    while (line[temp] != ' ' and line[temp] != ':')
+                    while (line[temp] != ' ' && line[temp] != ':')
                     {
                         temp++;
                     }
 
                     headerKeyEndPos = temp - 1;
 
-                    // Get Header Value start and end pos
-                    while (line[temp] == ':' or line[temp] == ' ')
+                    // Get Header Value start && end pos
+                    while (line[temp] == ':' || line[temp] == ' ')
                     {
                         temp++;
                     }
@@ -336,7 +336,7 @@ namespace HTTP
         // Convert LF to CRLF
         for (int i = 0; i < m_rawStr.length(); i++)
         {
-            if (m_rawStr[i] == '\n' and m_rawStr[i - 1] != '\r')
+            if (m_rawStr[i] == '\n' && m_rawStr[i - 1] != '\r')
             {
                 m_rawStr.insert(i, "\r");
             }
@@ -364,7 +364,7 @@ namespace HTTP
         }
         codeStartPos = i;
 
-        while (m_rawStr[i] != ' ' and m_rawStr.substr(i, 2) != "\r\n")
+        while (m_rawStr[i] != ' ' && m_rawStr.substr(i, 2) != "\r\n")
         {
             i++;
         }
@@ -406,9 +406,9 @@ namespace HTTP
                 }
 
                 // Check if new header line
-                if (line[0] != ' ' or line.find(':') != -1)
+                if (line[0] != ' ' || line.find(':') != -1)
                 {
-                    // Get Header Key start and end pos
+                    // Get Header Key start && end pos
                     int temp = 0;
                     while (line[temp] == ' ')
                     {
@@ -417,15 +417,15 @@ namespace HTTP
 
                     headerKeyStartPos = temp;
 
-                    while (line[temp] != ' ' and line[temp] != ':')
+                    while (line[temp] != ' ' && line[temp] != ':')
                     {
                         temp++;
                     }
 
                     headerKeyEndPos = temp - 1;
 
-                    // Get Header Value start and end pos
-                    while (line[temp] == ':' or line[temp] == ' ')
+                    // Get Header Value start && end pos
+                    while (line[temp] == ':' || line[temp] == ' ')
                     {
                         temp++;
                     }
