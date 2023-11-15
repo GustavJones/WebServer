@@ -1,9 +1,12 @@
 #include "Server.hpp"
+#include "FileManage.h"
 #include "Parser.hpp"
 #include <iostream>
 
 void HTTP::WebServer::HandleConnection(GNetworking::Socket *_clientSock)
 {
+    std::string htmlPage;
+
     std::cout << "Client Connected" << '\n';
     while (true)
     {
@@ -23,10 +26,17 @@ void HTTP::WebServer::HandleConnection(GNetworking::Socket *_clientSock)
 
             if (req.GetType() == HTTP::RequestType::GET)
             {
+                if (req.GetPath() == "/" || req.GetPath() == "/index.html")
+                {
+                    FileManage::File indexHtml("index.html");
+                    htmlPage = indexHtml.ReadFile();
+                }
+
                 Response resp;
                 resp.SetVersion(1.0);
                 resp.SetCode(200);
-                resp.SetMessage("<html>\n<head>\n<title>Hello, World!</title>\n</head>\n<body>\n<p>Hello, World</p>\n</body>\n</html>");
+                // resp.SetMessage("<html>\n<head>\n<title>Hello, World!</title>\n</head>\n<body>\n<p>Hello, World</p>\n</body>\n</html>");
+                resp.SetMessage(htmlPage);
 
                 _clientSock->Send(resp.CreateRaw("OK"));
             }
@@ -40,6 +50,14 @@ void HTTP::WebServer::HandleConnection(GNetworking::Socket *_clientSock)
 
 int main(int argc, char const *argv[])
 {
-    HTTP::WebServer server("127.0.0.1", 4587, 2);
+    std::string address, port;
+
+    std::cout << "Enter server address: ";
+    std::getline(std::cin, address);
+
+    std::cout << "Enter server port: ";
+    std::getline(std::cin, port);
+
+    HTTP::WebServer server(address, std::stoi(port), 3);
     return 0;
 }
