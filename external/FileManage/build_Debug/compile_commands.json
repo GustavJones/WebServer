@@ -1,0 +1,44 @@
+[
+{
+  "directory": "C:/CXXLibs/FileManage/build_Debug",
+  "command": "C:\\mingw64\\bin\\g++.exe  @CMakeFiles/FileManage.dir/includes_CXX.rsp -g -o CMakeFiles\\FileManage.dir\\src\\File.cpp.obj -c C:\\CXXLibs\\FileManage\\src\\File.cpp",
+  "file": "C:/CXXLibs/FileManage/src/File.cpp",
+  "output": "CMakeFiles/FileManage.dir/src/File.cpp.obj"
+},
+{
+  "directory": "C:/CXXLibs/FileManage/build_Debug",
+  "command": "C:\\mingw64\\bin\\g++.exe  @CMakeFiles/FileManage.dir/includes_CXX.rsp -g -o CMakeFiles\\FileManage.dir\\src\\Folder.cpp.obj -c C:\\CXXLibs\\FileManage\\src\\Folder.cpp",
+  "file": "C:/CXXLibs/FileManage/src/Folder.cpp",
+  "output": "CMakeFiles/FileManage.dir/src/Folder.cpp.obj"
+},
+{
+  "directory": "C:/CXXLibs/FileManage/build_Debug",
+  "command": "C:\\mingw64\\bin\\g++.exe  @CMakeFiles/FileManage.dir/includes_CXX.rsp -g -o CMakeFiles\\FileManage.dir\\src\\Path.cpp.obj -c C:\\CXXLibs\\FileManage\\src\\Path.cpp",
+  "file": "C:/CXXLibs/FileManage/src/Path.cpp",
+  "output": "CMakeFiles/FileManage.dir/src/Path.cpp.obj"
+},
+{
+  "directory": "C:/CXXLibs/FileManage/build_Debug/tests",
+  "command": "C:\\mingw64\\bin\\g++.exe  @CMakeFiles/test1.dir/includes_CXX.rsp -g -o CMakeFiles\\test1.dir\\test1.cpp.obj -c C:\\CXXLibs\\FileManage\\tests\\test1.cpp",
+  "file": "C:/CXXLibs/FileManage/tests/test1.cpp",
+  "output": "tests/CMakeFiles/test1.dir/test1.cpp.obj"
+},
+{
+  "directory": "C:/CXXLibs/FileManage/build_Debug/tests",
+  "command": "C:\\mingw64\\bin\\g++.exe  @CMakeFiles/test2.dir/includes_CXX.rsp -g -o CMakeFiles\\test2.dir\\test2.cpp.obj -c C:\\CXXLibs\\FileManage\\tests\\test2.cpp",
+  "file": "C:/CXXLibs/FileManage/tests/test2.cpp",
+  "output": "tests/CMakeFiles/test2.dir/test2.cpp.obj"
+},
+{
+  "directory": "C:/CXXLibs/FileManage/build_Debug/tests",
+  "command": "C:\\mingw64\\bin\\g++.exe  @CMakeFiles/test3.dir/includes_CXX.rsp -g -o CMakeFiles\\test3.dir\\test3.cpp.obj -c C:\\CXXLibs\\FileManage\\tests\\test3.cpp",
+  "file": "C:/CXXLibs/FileManage/tests/test3.cpp",
+  "output": "tests/CMakeFiles/test3.dir/test3.cpp.obj"
+},
+{
+  "directory": "C:/CXXLibs/FileManage/build_Debug/tests",
+  "command": "C:\\mingw64\\bin\\g++.exe  @CMakeFiles/test4.dir/includes_CXX.rsp -g -o CMakeFiles\\test4.dir\\test4.cpp.obj -c C:\\CXXLibs\\FileManage\\tests\\test4.cpp",
+  "file": "C:/CXXLibs/FileManage/tests/test4.cpp",
+  "output": "tests/CMakeFiles/test4.dir/test4.cpp.obj"
+}
+]
