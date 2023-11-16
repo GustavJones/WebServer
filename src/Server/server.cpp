@@ -6,45 +6,34 @@
 void HTTP::WebServer::HandleConnection(GNetworking::Socket *_clientSock)
 {
     std::string htmlPage;
-
-    std::cout << "Client Connected" << '\n';
-    while (true)
+    std::string input = _clientSock->Recv();
+    try
     {
-        std::string input = _clientSock->Recv();
+        Request req(input);
 
-        if (input == "")
+        std::cout << req.GetRaw() << "\n\n\n\n";
+
+        if (req.GetType() == HTTP::RequestType::GET)
         {
-            std::cout << "Client Disconnected" << '\n';
-            return;
-        }
-
-        try
-        {
-            Request req(input);
-
-            std::cout << req.GetRaw() << "\n\n\n\n";
-
-            if (req.GetType() == HTTP::RequestType::GET)
+            if (req.GetPath() == "/" || req.GetPath() == "/index.html")
             {
-                if (req.GetPath() == "/" || req.GetPath() == "/index.html")
-                {
-                    FileManage::File indexHtml("index.html");
-                    htmlPage = indexHtml.ReadFile();
-                }
-
-                Response resp;
-                resp.SetVersion(1.0);
-                resp.SetCode(200);
-                // resp.SetMessage("<html>\n<head>\n<title>Hello, World!</title>\n</head>\n<body>\n<p>Hello, World</p>\n</body>\n</html>");
-                resp.SetMessage(htmlPage);
-
-                _clientSock->Send(resp.CreateRaw("OK"));
+                FileManage::File indexHtml("index.html");
+                htmlPage = indexHtml.ReadFile();
             }
+
+            Response resp;
+            resp.SetVersion(1.0);
+            resp.SetCode(200);
+            // resp.SetMessage("<html>\n<head>\n<title>Hello, World!</title>\n</head>\n<body>\n<p>Hello, World</p>\n</body>\n</html>");
+            resp.SetMessage(htmlPage);
+
+            _clientSock->Send(resp.CreateRaw("OK"));
+            _clientSock->Close();
         }
-        catch (const std::exception &e)
-        {
-            std::cerr << e.what() << '\n';
-        }
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << e.what() << '\n';
     }
 }
 
