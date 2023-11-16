@@ -17,8 +17,14 @@ void HTTP::WebServer::HandleConnection(GNetworking::Socket *_clientSock)
         {
             if (req.GetPath() == "/" || req.GetPath() == "/index.html")
             {
-                FileManage::File indexHtml("index.html");
-                htmlPage = indexHtml.ReadFile();
+                FileManage::File htmlFile("index.html");
+                htmlPage = htmlFile.ReadFile();
+            }
+            else
+            {
+                std::string path = req.GetPath();
+                FileManage::File htmlFile(path.erase(0, 1));
+                htmlPage = htmlFile.ReadFile();
             }
 
             Response resp;
