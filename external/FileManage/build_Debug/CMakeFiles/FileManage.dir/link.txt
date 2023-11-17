@@ -1,2 +1,0 @@
-C:\mingw64\bin\ar.exe qc libFileManage.a CMakeFiles/FileManage.dir/src/File.cpp.obj CMakeFiles/FileManage.dir/src/Folder.cpp.obj CMakeFiles/FileManage.dir/src/Path.cpp.obj
-C:\mingw64\bin\ranlib.exe libFileManage.a
