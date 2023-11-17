@@ -1,5 +1,5 @@
 #include "Server.hpp"
-#include "FileManage.h"
+#include "GFiles/File.hpp"
 #include "Parser.hpp"
 #include <iostream>
 
@@ -11,29 +11,65 @@ void HTTP::WebServer::HandleConnection(GNetworking::Socket *_clientSock)
     {
         Request req(input);
 
-        std::cout << req.GetRaw() << "\n\n\n\n";
+        std::cout << req.GetRaw() << "\n\n";
 
         if (req.GetType() == HTTP::RequestType::GET)
         {
             if (req.GetPath() == "/" || req.GetPath() == "/index.html")
             {
-                FileManage::File htmlFile("index.html");
-                htmlPage = htmlFile.ReadFile();
+                GFiles::File htmlFile(GFiles::Path("index.html"));
+
+                char *buffer = htmlFile.read();
+                if (buffer != nullptr)
+                {
+                    htmlPage = (std::string)buffer;
+                }
+                else
+                {
+                    htmlPage = "";
+                }
+
+                if (htmlFile.exists())
+                {
+                    std::cout << "File Exists" << '\n'
+                              << '\n';
+                }
             }
             else
             {
                 std::string path = req.GetPath();
-                FileManage::File htmlFile(path.erase(0, 1));
-                htmlPage = htmlFile.ReadFile();
+                GFiles::File htmlFile(GFiles::Path(path.erase(0, 1)));
+
+                char *buffer = htmlFile.read();
+                if (buffer != nullptr)
+                {
+                    htmlPage = (std::string)buffer;
+                }
+                else
+                {
+                    htmlPage = "";
+                }
+
+                if (htmlFile.exists())
+                {
+                    std::cout << "File Exists" << '\n'
+                              << '\n';
+                }
             }
 
             Response resp;
             resp.SetVersion(1.0);
-            resp.SetCode(200);
-            // resp.SetMessage("<html>\n<head>\n<title>Hello, World!</title>\n</head>\n<body>\n<p>Hello, World</p>\n</body>\n</html>");
-            resp.SetMessage(htmlPage);
-
-            _clientSock->Send(resp.CreateRaw("OK"));
+            if (htmlPage != "")
+            {
+                resp.SetCode(200);
+                resp.SetMessage(htmlPage);
+                _clientSock->Send(resp.CreateRaw("OK"));
+            }
+            else
+            {
+                resp.SetCode(404);
+                _clientSock->Send(resp.CreateRaw("Not Found"));
+            }
             _clientSock->Close();
         }
     }

@@ -6,7 +6,7 @@ file(GLOB Client "src/Client/*.cpp")
 file(GLOB SHARED "src/Shared/*.cpp")
 
 add_subdirectory(external/GNetworking)
-add_subdirectory(external/FileManage)
+add_subdirectory(external/GFiles)
 
 add_library(${PROJECT_NAME}_Shared STATIC ${SHARED})
 add_executable(${PROJECT_NAME}_s ${Server})
@@ -14,8 +14,8 @@ add_executable(${PROJECT_NAME}_s ${Server})
 # add_executable(${PROJECT_NAME}_c ${Client})
 add_executable(test_app "tests/main.cpp")
 
-target_include_directories(${PROJECT_NAME}_Shared PRIVATE include external/GNetworking/include external/FileManage/include)
-target_include_directories(${PROJECT_NAME}_s PRIVATE include external/GNetworking/include external/FileManage/include)
+target_include_directories(${PROJECT_NAME}_Shared PRIVATE include external/GNetworking/include external/GFiles/include)
+target_include_directories(${PROJECT_NAME}_s PRIVATE include external/GNetworking/include external/GFiles/include)
 
 # target_include_directories(${PROJECT_NAME}_c PRIVATE include external/GNetworking/include)
 target_include_directories(test_app PRIVATE include external/GNetworking/include)
