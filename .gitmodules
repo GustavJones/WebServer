@@ -1,3 +1,6 @@
 [submodule "external/GNetworking"]
 	path = external/GNetworking
 	url = https://github.com/GustavJones/GNetworking.git
+[submodule "external/GFiles"]
+	path = external/GFiles
+	url = https://github.com/GustavJones/GFiles.git
