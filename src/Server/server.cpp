@@ -5,56 +5,59 @@
 
 void HTTP::WebServer::HandleConnection(GNetworking::Socket *_clientSock)
 {
-    std::string htmlPage;
     std::string input = _clientSock->Recv();
-    try
+
+    Request req(input);
+
+    std::cout << req.GetRaw() << "\n\n";
+
+    // Get Requests
+    if (req.GetType() == HTTP::RequestType::GET)
     {
-        Request req(input);
+        // "/" or "/index.html"
 
-        std::cout << req.GetRaw() << "\n\n";
-
-        if (req.GetType() == HTTP::RequestType::GET)
+        if (req.GetPath() == "/" || req.GetPath() == "/index.html")
         {
-            if (req.GetPath() == "/" || req.GetPath() == "/index.html")
+
+            GFiles::File htmlFile(GFiles::Path("index.html"));
+
+            std::string htmlPage = htmlFile.read();
+
+            if (htmlFile.exists())
             {
-                GFiles::File htmlFile(GFiles::Path("index.html"));
+                std::cout << "File Exists" << '\n'
+                          << '\n';
+            }
 
-                char *buffer = htmlFile.read();
-                if (buffer != nullptr)
-                {
-                    htmlPage = (std::string)buffer;
-                }
-                else
-                {
-                    htmlPage = "";
-                }
-
-                if (htmlFile.exists())
-                {
-                    std::cout << "File Exists" << '\n'
-                              << '\n';
-                }
+            Response resp;
+            resp.SetVersion(1.0);
+            if (htmlPage != "")
+            {
+                resp.SetCode(200);
+                resp.SetMessage(htmlPage);
+                _clientSock->Send(resp.CreateRaw("OK"));
             }
             else
             {
-                std::string path = req.GetPath();
-                GFiles::File htmlFile(GFiles::Path(path.erase(0, 1)));
+                resp.SetCode(404);
+                _clientSock->Send(resp.CreateRaw("Not Found"));
+            }
+            _clientSock->Close();
+        }
 
-                char *buffer = htmlFile.read();
-                if (buffer != nullptr)
-                {
-                    htmlPage = (std::string)buffer;
-                }
-                else
-                {
-                    htmlPage = "";
-                }
+        // Everything else
 
-                if (htmlFile.exists())
-                {
-                    std::cout << "File Exists" << '\n'
-                              << '\n';
-                }
+        else
+        {
+            std::string path = req.GetPath();
+            GFiles::File htmlFile(GFiles::Path(path.erase(0, 1)));
+
+            char *htmlPage = htmlFile.read();
+
+            if (htmlFile.exists())
+            {
+                std::cout << "File Exists" << '\n'
+                          << '\n';
             }
 
             Response resp;
@@ -73,21 +76,19 @@ void HTTP::WebServer::HandleConnection(GNetworking::Socket *_clientSock)
             _clientSock->Close();
         }
     }
-    catch (const std::exception &e)
-    {
-        std::cerr << e.what() << '\n';
-    }
 }
 
 int main(int argc, char const *argv[])
 {
     std::string address, port;
+    address = "10.0.0.150";
+    port = "80";
 
-    std::cout << "Enter server address: ";
-    std::getline(std::cin, address);
+    // std::cout << "Enter server address: ";
+    // std::getline(std::cin, address);
 
-    std::cout << "Enter server port: ";
-    std::getline(std::cin, port);
+    // std::cout << "Enter server port: ";
+    // std::getline(std::cin, port);
 
     HTTP::WebServer server(address, std::stoi(port), 3);
     return 0;
