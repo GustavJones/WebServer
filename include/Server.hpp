@@ -1,5 +1,6 @@
 #pragma once
 #include "Socket.h"
+#include "Parser.hpp"
 #include <string>
 #include <vector>
 #include <thread>
@@ -20,6 +21,9 @@ namespace HTTP
         ~WebServer();
 
         virtual void HandleConnection(GNetworking::Socket *_clientSock);
+        virtual void Get(HTTP::Request &req, GNetworking::Socket *_clientSock);
+        virtual void Post(HTTP::Request &req, GNetworking::Socket *_clientSock);
+        virtual void Head(HTTP::Request &req, GNetworking::Socket *_clientSock);
     };
 
 } // namespace HTTP
