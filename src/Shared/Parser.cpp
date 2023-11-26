@@ -1,569 +1,741 @@
 #include "Parser.hpp"
-#include <string>
 #include <iostream>
-#include <cmath>
 
-namespace HTTP
+HTTP::Version::Version()
+    : major(0), minor(0)
 {
-    Request::Request()
-        : m_rawStr(""), m_reqType(RequestType::UNKNOWN),
-          m_uriPath("/"), m_httpVersion(0.0),
-          m_headers(std::map<std::string, std::string>()),
-          m_message("")
+}
+
+HTTP::Version::Version(int _major, int _minor)
+    : major(_major), minor(_minor)
+{
+}
+
+HTTP::Version::~Version()
+{
+}
+
+HTTP::Request::Request(char *_raw, int _len)
+    : rawLen(_len), msgLen(0)
+{
+    m_output = new char[2];
+
+    int uriStartPos, uriEndPos;
+    int httpStartPos, httpEndPos;
+    int headerKeyStartPos, headerKeyEndPos;
+    int headerValueStartPos, headerValueEndPos;
+    int prevNewlinePos = 0;
+
+    int i = 0;
+
+    for (int i = 0; i < _len; i++)
     {
+        raw.push_back(_raw[i]);
     }
 
-    Request::Request(std::string _rawStr) : m_rawStr(_rawStr)
+    // Convert LF to CRLF
+    for (int i = 0; i < raw.size(); i++)
     {
-        int i = 0;
-        int uriStartPos, uriEndPos;
-        int httpStartPos, httpEndPos;
-        int headerKeyStartPos, headerKeyEndPos;
-        int headerValueStartPos, headerValueEndPos;
-
-        if (m_rawStr == "")
+        if (raw[i] == '\n' && raw[i - 1] != '\r')
         {
-            return;
-        }
-
-        // Convert LF to CRLF
-        for (int i = 0; i < m_rawStr.length(); i++)
-        {
-            if (m_rawStr[i] == '\n' && m_rawStr[i - 1] != '\r')
-            {
-                m_rawStr.insert(i, "\r");
-            }
-        }
-
-        // Get Type e.g. GET/POST/HEAD
-        i = 0;
-        do
-        {
-            switch (m_rawStr[i])
-            {
-            case 'G':
-                m_reqType = RequestType::GET;
-                break;
-
-            case 'P':
-                m_reqType = RequestType::POST;
-                break;
-
-            case 'H':
-                m_reqType = RequestType::HEAD;
-                break;
-
-            default:
-                m_reqType = RequestType::UNKNOWN;
-                break;
-            }
-
-            i++;
-        } while (m_rawStr[i - 1] == ' ' || m_rawStr[i - 1] == '\n' || m_rawStr[i - 1] == '\r');
-
-        // Get URI start position
-        while (true)
-        {
-            if (m_rawStr[i] == '/' || m_rawStr.substr(i, 4) == "http")
-            {
-                uriStartPos = i;
-                break;
-            }
-            i++;
-        }
-
-        // Get HTTP Version start && end position
-        while (true)
-        {
-            if (m_rawStr.substr(i, 5) == "HTTP/")
-            {
-                httpStartPos = i;
-                int temp = i;
-                while (m_rawStr[temp] != ' ' && m_rawStr[temp] != '\r' && m_rawStr[temp + 1] != '\n')
-                {
-                    temp++;
-                }
-                httpEndPos = temp - 1;
-
-                break;
-            }
-            i++;
-        }
-
-        // Get URI end position
-        i--;
-        while (true)
-        {
-            if (m_rawStr[i] != ' ')
-            {
-                uriEndPos = i;
-                break;
-            }
-            i--;
-        }
-
-        m_uriPath = m_rawStr.substr(uriStartPos, uriEndPos - uriStartPos + 1);
-        m_httpVersion = std::stod(m_rawStr.substr(httpStartPos + 5, httpEndPos - httpStartPos - 5 + 1));
-
-        // Get Individual lines
-        int prevNewlinePos = 0;
-
-        std::vector<std::pair<std::string, std::string>> headersTemp;
-
-        // Get Headers
-        i = 0;
-        while (true)
-        {
-            if (i == m_rawStr.length())
-            {
-                break;
-            }
-
-            // Seperate Lines
-            if (m_rawStr.substr(i, 2) == "\r\n")
-            {
-                std::string line = m_rawStr.substr(prevNewlinePos, i - prevNewlinePos + 2);
-
-                // Check if not in header lines
-                if (prevNewlinePos == 0)
-                {
-                    prevNewlinePos = i + 2;
-                    i++;
-                    continue;
-                }
-                else if (line == "\r\n")
-                {
-                    i += 2;
-                    break;
-                }
-
-                // Check if new header line
-                if (line[0] != ' ' || line.find(':') != -1)
-                {
-                    // Get Header Key start && end pos
-                    int temp = 0;
-                    while (line[temp] == ' ')
-                    {
-                        temp++;
-                    }
-
-                    headerKeyStartPos = temp;
-
-                    while (line[temp] != ' ' && line[temp] != ':')
-                    {
-                        temp++;
-                    }
-
-                    headerKeyEndPos = temp - 1;
-
-                    // Get Header Value start && end pos
-                    while (line[temp] == ':' || line[temp] == ' ')
-                    {
-                        temp++;
-                    }
-
-                    headerValueStartPos = temp;
-
-                    while (line.substr(temp, 2) != "\r\n")
-                    {
-                        temp++;
-                    }
-
-                    headerValueEndPos = temp - 1;
-
-                    // Get Headers substr
-                    std::string headerKey = line.substr(headerKeyStartPos, headerKeyEndPos - headerKeyStartPos + 1);
-                    std::string headerValue = line.substr(headerValueStartPos, headerValueEndPos - headerValueStartPos + 1);
-
-                    // Add headers to a vector
-                    headersTemp.emplace_back(std::pair<std::string, std::string>(headerKey, headerValue));
-                }
-                else
-                {
-                    int temp = 0;
-                    headerValueStartPos = temp;
-
-                    while (line.substr(temp, 2) != "\r\n")
-                    {
-                        temp++;
-                    }
-                    headerValueEndPos = temp - 1;
-
-                    std::string headerValue = line.substr(headerValueStartPos, headerValueEndPos - headerValueStartPos + 1);
-
-                    headersTemp[headersTemp.size() - 1].second = headersTemp[headersTemp.size() - 1].second + headerValue;
-                }
-
-                // Update Line beginning
-                prevNewlinePos = i + 2;
-            }
-
-            i++;
-        }
-
-        // Add header vector to header map
-        for (const std::pair<std::string, std::string> header : headersTemp)
-        {
-            m_headers.emplace(header);
-        }
-
-        // Get Message
-        while (i < m_rawStr.length())
-        {
-            m_message = m_message + m_rawStr[i];
-            i++;
+            raw.insert(raw.begin() + i, '\r');
         }
     }
 
-    std::string Request::CreateRaw()
+    // Get Type e.g. GET/POST/HEAD
+    i = 0;
+    do
     {
-        // Add Request type
-        switch (m_reqType)
+        switch (raw[i])
         {
-        case RequestType::GET:
-            m_rawStr = "GET ";
+        case 'G':
+            type = RequestType::GET;
             break;
 
-        case RequestType::POST:
-            m_rawStr = "POST ";
+        case 'P':
+            type = RequestType::POST;
             break;
 
-        case RequestType::HEAD:
-            m_rawStr = "HEAD ";
+        case 'H':
+            type = RequestType::HEAD;
             break;
 
         default:
-            return "";
+            type = RequestType::UNKNOWN;
             break;
         }
 
-        m_rawStr = m_rawStr + m_uriPath + " ";
-        std::string version = std::to_string(m_httpVersion);
-        m_rawStr = m_rawStr + "HTTP/" + version.substr(0, 3) + "\r\n";
+        i++;
+    } while (raw[i - 1] == ' ' || raw[i - 1] == '\n' || raw[i - 1] == '\r');
 
-        for (const std::pair<std::string, std::string> header : m_headers)
+    // Get URI start position
+    while (true)
+    {
+        if (raw[i] == '/')
         {
-            m_rawStr = m_rawStr + header.first + ": " + header.second + "\r\n";
+            uriStartPos = i;
+            break;
         }
-
-        m_rawStr = m_rawStr + "\r\n";
-        m_rawStr = m_rawStr + m_message;
-
-        return m_rawStr;
+        i++;
     }
 
-    void Request::AddHeader(std::string _key, std::string _value)
+    // Get HTTP Version start && end position
+    while (true)
     {
-        std::pair<std::string, std::string> temp(_key, _value);
-
-        m_headers.insert(temp);
-    }
-
-    std::string Request::GetRaw()
-    {
-        return m_rawStr;
-    }
-
-    RequestType Request::GetType()
-    {
-        return m_reqType;
-    }
-
-    std::string Request::GetPath()
-    {
-        return m_uriPath;
-    }
-
-    double Request::GetVersion()
-    {
-        return m_httpVersion;
-    }
-
-    std::map<std::string, std::string> Request::GetHeaders()
-    {
-        return m_headers;
-    }
-
-    std::string Request::GetMsg()
-    {
-        return m_message;
-    }
-
-    void Request::SetRaw(std::string _rawStr)
-    {
-        m_rawStr = _rawStr;
-    }
-
-    void Request::SetType(RequestType _reqType)
-    {
-        m_reqType = _reqType;
-    }
-
-    void Request::SetPath(std::string _uriPath)
-    {
-        m_uriPath = _uriPath;
-    }
-
-    void Request::SetVersion(double _httpVersion)
-    {
-        m_httpVersion = _httpVersion;
-    }
-
-    void Request::SetHeaders(std::map<std::string, std::string> _headers)
-    {
-        m_headers = _headers;
-    }
-
-    void Request::SetMessage(std::string _message)
-    {
-        m_message = _message;
-    }
-
-    Request::~Request()
-    {
-    }
-
-    Response::Response()
-        : m_rawStr(""),
-          m_respCode(-1), m_httpVersion(0.0),
-          m_headers(std::map<std::string, std::string>()),
-          m_message("")
-    {
-    }
-
-    Response::Response(std::string _rawStr) : m_rawStr(_rawStr)
-    {
-        int i = 0;
-        int codeStartPos, codeEndPos;
-        int headerKeyStartPos, headerKeyEndPos;
-        int headerValueStartPos, headerValueEndPos;
-
-        // Convert LF to CRLF
-        for (int i = 0; i < m_rawStr.length(); i++)
+        if (raw[i] == 'H' && raw[i + 1] == 'T' && raw[i + 2] == 'T' && raw[i + 3] == 'P' && raw[i + 4] == '/')
         {
-            if (m_rawStr[i] == '\n' && m_rawStr[i - 1] != '\r')
+            httpStartPos = i;
+            int temp = i;
+            while (raw[temp] != ' ' && raw[temp] != '\r' && raw[temp + 1] != '\n')
             {
-                m_rawStr.insert(i, "\r");
+                temp++;
             }
+            httpEndPos = temp - 1;
+
+            break;
         }
+        i++;
+    }
 
-        // Get HTTP Version
-        while (true)
+    // Get URI end position
+    i--;
+    while (true)
+    {
+        if (raw[i] != ' ')
         {
+            uriEndPos = i;
+            break;
+        }
+        i--;
+    }
 
-            if (m_rawStr.substr(i, 5) == "HTTP/")
+    // Path
+    for (int i = uriStartPos; i < uriEndPos + 1; i++)
+    {
+        path += raw[i];
+    }
+
+    // Version
+    std::string versionTemp;
+    int versionTempPos;
+
+    for (int i = httpStartPos; i < httpEndPos + 1; i++)
+    {
+        versionTemp += raw[i];
+    }
+
+    versionTemp.erase(0, 5);
+
+    versionTempPos = versionTemp.find('.');
+
+    version.major = std::stoi(versionTemp.substr(0, versionTempPos));
+    version.minor = std::stoi(versionTemp.substr(versionTempPos + 1, versionTemp.length() - versionTempPos - 1));
+
+    // Get Headers
+    i = 0;
+    while (i != raw.size())
+    {
+        // Seperate Lines
+        if (raw[i] == '\r' && raw[i + 1] == '\n')
+        {
+            std::string line;
+            for (int j = prevNewlinePos; j < i + 2; j++)
             {
-                m_httpVersion = std::stod(m_rawStr.substr(i + 5, 3));
+                line += raw[j];
+            }
+
+            // Check if not in header lines
+            if (prevNewlinePos == 0)
+            {
+                prevNewlinePos = i + 2; // + 2 for \r\n
+                i++;
+                continue;
+            }
+            else if (line == "\r\n")
+            {
+                i += 2;
                 break;
             }
 
-            i++;
-        }
-
-        i += 8;
-
-        // Get Code
-        while (m_rawStr[i] == ' ')
-        {
-            i++;
-        }
-        codeStartPos = i;
-
-        while (m_rawStr[i] != ' ' && m_rawStr.substr(i, 2) != "\r\n")
-        {
-            i++;
-        }
-        codeEndPos = i - 1;
-
-        std::string code = m_rawStr.substr(codeStartPos, codeEndPos - codeStartPos + 1);
-        m_respCode = std::stoi(code);
-
-        // Get Individual lines
-        int prevNewlinePos = 0;
-
-        std::vector<std::pair<std::string, std::string>> headersTemp;
-
-        // Get Headers
-        i = 0;
-        while (true)
-        {
-            if (i == m_rawStr.length())
+            // Check if new header line
+            if (line[0] != ' ' || line.find(':') != -1)
             {
-                break;
-            }
-
-            // Seperate Lines
-            if (m_rawStr.substr(i, 2) == "\r\n")
-            {
-                std::string line = m_rawStr.substr(prevNewlinePos, i - prevNewlinePos + 2);
-
-                // Check if not in header lines
-                if (prevNewlinePos == 0)
+                // Get Header Key start && end pos
+                int temp = 0;
+                while (line[temp] == ' ')
                 {
-                    prevNewlinePos = i + 2;
-                    i++;
-                    continue;
+                    temp++;
                 }
-                else if (line == "\r\n")
+
+                headerKeyStartPos = temp;
+
+                while (line[temp] != ' ' && line[temp] != ':')
                 {
-                    i += 2;
+                    temp++;
+                }
+
+                headerKeyEndPos = temp - 1;
+
+                // Get Header Value start && end pos
+                while (line[temp] == ':' || line[temp] == ' ')
+                {
+                    temp++;
+                }
+
+                headerValueStartPos = temp;
+
+                while (line.substr(temp, 2) != "\r\n")
+                {
+                    temp++;
+                }
+
+                headerValueEndPos = temp - 1;
+
+                // Get Headers substr
+                std::string headerKey = line.substr(headerKeyStartPos, headerKeyEndPos - headerKeyStartPos + 1);
+                std::string headerValue = line.substr(headerValueStartPos, headerValueEndPos - headerValueStartPos + 1);
+
+                // Add headers to a vector
+                headers.emplace_back(Header(headerKey, headerValue));
+            }
+            else
+            {
+                int temp = 0;
+                headerValueStartPos = temp;
+
+                while (line.substr(temp, 2) != "\r\n")
+                {
+                    temp++;
+                }
+                headerValueEndPos = temp - 1;
+
+                std::string headerValue = line.substr(headerValueStartPos, headerValueEndPos - headerValueStartPos + 1);
+
+                headers[headers.size() - 1].second = headers[headers.size() - 1].second + headerValue;
+            }
+
+            // Update Line beginning
+            prevNewlinePos = i + 2;
+        }
+
+        if (raw[i] == '\r' && raw[i + 1] == '\n' && raw[i + 2] == '\r' && raw[i + 3] == '\n')
+        {
+            i += 4;
+            break;
+        }
+
+        i++;
+    }
+
+    // Get Message
+    while (i < raw.size())
+    {
+        msg.push_back(raw[i]);
+        msgLen++;
+        i++;
+    }
+}
+
+HTTP::Request::Request()
+    : rawLen(0), msgLen(0)
+{
+    m_output = new char[2];
+}
+
+char *HTTP::Request::CreateRaw()
+{
+    // Add Request type
+    std::string temp;
+    raw.clear();
+
+    switch (type)
+    {
+    case RequestType::GET:
+        temp = "GET ";
+        for (char c : temp)
+        {
+            raw.push_back(c);
+        }
+
+        break;
+
+    case RequestType::POST:
+        temp = "POST ";
+        for (char c : temp)
+        {
+            raw.push_back(c);
+        }
+        break;
+
+    case RequestType::HEAD:
+        temp = "HEAD ";
+        for (char c : temp)
+        {
+            raw.push_back(c);
+        }
+        break;
+
+    default:
+        return nullptr;
+        break;
+    }
+
+    for (char c : path)
+    {
+        raw.push_back(c);
+    }
+    raw.push_back(' ');
+
+    for (char c : "HTTP/")
+    {
+        if (c == 0)
+        {
+            break;
+        }
+
+        raw.push_back(c);
+    }
+    std::string major, minor;
+    major = std::to_string(version.major);
+    minor = std::to_string(version.minor);
+
+    for (char c : major)
+    {
+        raw.push_back(c);
+    }
+
+    raw.push_back('.');
+
+    for (char c : minor)
+    {
+        raw.push_back(c);
+    }
+    raw.push_back('\r');
+    raw.push_back('\n');
+
+    for (const Header header : headers)
+    {
+        for (char c : header.first)
+        {
+            raw.push_back(c);
+        }
+
+        raw.push_back(':');
+        raw.push_back(' ');
+
+        for (char c : header.second)
+        {
+            raw.push_back(c);
+        }
+
+        raw.push_back('\r');
+        raw.push_back('\n');
+    }
+
+    raw.push_back('\r');
+    raw.push_back('\n');
+
+    for (char c : msg)
+    {
+        raw.push_back(c);
+    }
+
+    delete[] m_output;
+    m_output = new char[raw.size() + 1];
+
+    for (int i = 0; i < raw.size(); i++)
+    {
+        m_output[i] = raw[i];
+    }
+
+    m_output[raw.size()] = 0;
+
+    return m_output;
+}
+
+void HTTP::Request::AddHeader(std::string _key, std::string _value)
+{
+    headers.emplace_back(Header(_key, _value));
+}
+
+char *HTTP::Request::GetRaw()
+{
+    delete[] m_output;
+    m_output = new char[raw.size() + 1];
+
+    for (int i = 0; i < raw.size(); i++)
+    {
+        m_output[i] = raw[i];
+    }
+
+    m_output[raw.size()] = 0;
+
+    return m_output;
+}
+
+char *HTTP::Request::GetMsg()
+{
+    delete m_output;
+    m_output = new char[msg.size() + 1];
+
+    for (int i = 0; i < msg.size(); i++)
+    {
+        m_output[i] = msg[i];
+    }
+
+    m_output[msg.size()] = 0;
+
+    return m_output;
+}
+
+void HTTP::Request::SetRaw(char *_raw, int _len)
+{
+    raw.clear();
+
+    for (int i = 0; i < _len; i++)
+    {
+        raw.push_back(_raw[i]);
+    }
+
+    rawLen = _len;
+}
+
+void HTTP::Request::SetMsg(char *_msg, int _len)
+{
+    msg.clear();
+
+    for (int i = 0; i < _len; i++)
+    {
+        msg.push_back(_msg[i]);
+    }
+
+    msgLen = _len;
+}
+
+HTTP::Request::~Request()
+{
+    delete[] m_output;
+}
+
+HTTP::Response::Response(char *_raw, int _len)
+    : rawLen(_len), msgLen(0)
+{
+    m_output = new char[2];
+
+    int i = 0;
+    int versionStartPos, versionEndPos, versionPeriodPos;
+    int codeStartPos, codeEndPos;
+    int headerKeyStartPos, headerKeyEndPos;
+    int headerValueStartPos, headerValueEndPos;
+
+    for (int i = 0; i < _len; i++)
+    {
+        raw.push_back(_raw[i]);
+    }
+
+    // Convert LF to CRLF
+    for (int i = 0; i < raw.size(); i++)
+    {
+        if (raw[i] == '\n' && raw[i - 1] != '\r')
+        {
+            raw.insert(raw.begin() + i, '\r');
+        }
+    }
+
+    // Get HTTP Version
+    while (true)
+    {
+        if (raw[i] == 'H' && raw[i + 1] == 'T' && raw[i + 2] == 'T' && raw[i + 3] == 'P' && raw[i + 4] == '/')
+        {
+            versionStartPos = i + 5;
+
+            for (int j = versionStartPos; j < raw.size(); j++)
+            {
+                if (raw[j] == ' ')
+                {
+                    versionEndPos = j - 1;
                     break;
                 }
-
-                // Check if new header line
-                if (line[0] != ' ' || line.find(':') != -1)
-                {
-                    // Get Header Key start && end pos
-                    int temp = 0;
-                    while (line[temp] == ' ')
-                    {
-                        temp++;
-                    }
-
-                    headerKeyStartPos = temp;
-
-                    while (line[temp] != ' ' && line[temp] != ':')
-                    {
-                        temp++;
-                    }
-
-                    headerKeyEndPos = temp - 1;
-
-                    // Get Header Value start && end pos
-                    while (line[temp] == ':' || line[temp] == ' ')
-                    {
-                        temp++;
-                    }
-
-                    headerValueStartPos = temp;
-
-                    while (line.substr(temp, 2) != "\r\n")
-                    {
-                        temp++;
-                    }
-
-                    headerValueEndPos = temp - 1;
-
-                    // Get Headers substr
-                    std::string headerKey = line.substr(headerKeyStartPos, headerKeyEndPos - headerKeyStartPos + 1);
-                    std::string headerValue = line.substr(headerValueStartPos, headerValueEndPos - headerValueStartPos + 1);
-
-                    // Add headers to a vector
-                    headersTemp.emplace_back(std::pair<std::string, std::string>(headerKey, headerValue));
-                }
-                else
-                {
-                    int temp = 0;
-                    headerValueStartPos = temp;
-
-                    while (line.substr(temp, 2) != "\r\n")
-                    {
-                        temp++;
-                    }
-                    headerValueEndPos = temp - 1;
-
-                    std::string headerValue = line.substr(headerValueStartPos, headerValueEndPos - headerValueStartPos + 1);
-
-                    headersTemp[headersTemp.size() - 1].second = headersTemp[headersTemp.size() - 1].second + headerValue;
-                }
-
-                // Update Line beginning
-                prevNewlinePos = i + 2;
             }
 
-            i++;
+            break;
         }
+        i++;
+    }
 
-        // Add header vector to header map
-        for (const std::pair<std::string, std::string> header : headersTemp)
+    while (i < versionEndPos)
+    {
+        if (raw[i] == '.')
         {
-            m_headers.emplace(header);
+            versionPeriodPos = i;
+            break;
         }
+        i++;
+    }
 
-        // Get Message
-        while (i < m_rawStr.length())
+    i = versionEndPos + 1;
+
+    int major, minor;
+    std::string versionTemp;
+
+    for (int j = versionStartPos; j < versionPeriodPos; j++)
+    {
+        versionTemp += raw[j];
+    }
+
+    major = std::stoi(versionTemp);
+    versionTemp = "";
+
+    for (int j = versionPeriodPos + 1; j < versionEndPos + 1; j++)
+    {
+        versionTemp += raw[j];
+    }
+
+    minor = std::stoi(versionTemp);
+
+    version.major = major;
+    version.major = minor;
+
+    // Get Code
+    while (raw[i] == ' ')
+    {
+        i++;
+    }
+
+    codeStartPos = i;
+
+    while (raw[i] != ' ' && raw[i] != '\r' && raw[i + 1] != '\n')
+    {
+        i++;
+    }
+    codeEndPos = i - 1;
+
+    std::string codeStr;
+
+    for (int j = codeStartPos; j < codeEndPos + 1; j++)
+    {
+        codeStr += raw[j];
+    }
+
+    code = std::stoi(codeStr);
+
+    // Get Individual lines
+    int prevNewlinePos = 0;
+
+    // Get Headers
+    i = 0;
+    while (i != raw.size())
+    {
+        // Seperate Lines
+        if (raw[i] == '\r' && raw[i + 1] == '\n')
         {
-            m_message = m_message + m_rawStr[i];
-            i++;
+            std::string line;
+
+            for (int j = prevNewlinePos; j < i + 2; j++)
+            {
+                line += raw[j];
+            }
+
+            // Check if not in header lines
+            if (prevNewlinePos == 0)
+            {
+                prevNewlinePos = i + 2;
+                i++;
+                continue;
+            }
+            else if (line == "\r\n")
+            {
+                i += 2;
+                break;
+            }
+
+            // Check if new header line
+            if (line[0] != ' ' || line.find(':') != -1)
+            {
+                // Get Header Key start && end pos
+                int temp = 0;
+                while (line[temp] == ' ')
+                {
+                    temp++;
+                }
+
+                headerKeyStartPos = temp;
+
+                while (line[temp] != ' ' && line[temp] != ':')
+                {
+                    temp++;
+                }
+
+                headerKeyEndPos = temp - 1;
+
+                // Get Header Value start && end pos
+                while (line[temp] == ':' || line[temp] == ' ')
+                {
+                    temp++;
+                }
+
+                headerValueStartPos = temp;
+
+                while (line.substr(temp, 2) != "\r\n")
+                {
+                    temp++;
+                }
+
+                headerValueEndPos = temp - 1;
+
+                // Get Headers substr
+                std::string headerKey = line.substr(headerKeyStartPos, headerKeyEndPos - headerKeyStartPos + 1);
+                std::string headerValue = line.substr(headerValueStartPos, headerValueEndPos - headerValueStartPos + 1);
+
+                // Add headers to a vector
+                headers.emplace_back(Header(headerKey, headerValue));
+            }
+            else
+            {
+                int temp = 0;
+                headerValueStartPos = temp;
+
+                while (line.substr(temp, 2) != "\r\n")
+                {
+                    temp++;
+                }
+                headerValueEndPos = temp - 1;
+
+                std::string headerValue = line.substr(headerValueStartPos, headerValueEndPos - headerValueStartPos + 1);
+
+                headers[headers.size() - 1].second = headers[headers.size() - 1].second + headerValue;
+            }
+
+            // Update Line beginning
+            prevNewlinePos = i + 2;
         }
-    }
 
-    std::string Response::CreateRaw(std::string _responseCodeMessage)
-    {
-        std::string version = std::to_string(m_httpVersion);
-        m_rawStr = m_rawStr + "HTTP/" + version.substr(0, 3) + ' ';
-
-        m_rawStr = m_rawStr + std::to_string(m_respCode) + " " + _responseCodeMessage + "\r\n";
-
-        for (const std::pair<std::string, std::string> header : m_headers)
+        if (raw[i] == '\r' && raw[i + 1] == '\n' && raw[i + 2] == '\r' && raw[i + 3] == '\n')
         {
-            m_rawStr = m_rawStr + header.first + ": " + header.second + "\r\n";
+            break;
         }
 
-        m_rawStr = m_rawStr + "\r\n";
-        m_rawStr = m_rawStr + m_message;
-
-        return m_rawStr;
+        i++;
     }
 
-    void Response::AddHeader(std::string _key, std::string _value)
+    // Get Message
+    while (i < raw.size())
     {
-        std::pair<std::string, std::string> temp(_key, _value);
-
-        m_headers.insert(temp);
+        msg.push_back(raw[i]);
+        i++;
     }
+}
 
-    std::string Response::GetRaw()
+HTTP::Response::Response()
+    : rawLen(0), msgLen(0)
+{
+    m_output = new char[2];
+}
+
+char *HTTP::Response::CreateRaw(const char *_responseDescription)
+{
+    std::string versionStr = std::to_string(version.major) + '.' + std::to_string(version.minor);
+    raw.clear();
+
+    for (char c : "HTTP/" + versionStr + ' ')
     {
-        return m_rawStr;
+        raw.push_back(c);
     }
 
-    short Response::GetCode()
+    for (char c : std::to_string(code) + ' ' + _responseDescription + "\r\n")
     {
-        return m_respCode;
+        raw.push_back(c);
     }
 
-    double Response::GetVersion()
+    for (const Header header : headers)
     {
-        return m_httpVersion;
+        for (char c : header.first + ": " + header.second + "\r\n")
+        {
+            raw.push_back(c);
+        }
     }
 
-    std::map<std::string, std::string> Response::GetHeaders()
+    raw.push_back('\r');
+    raw.push_back('\n');
+
+    for (char c : msg)
     {
-        return m_headers;
+        raw.push_back(c);
     }
 
-    std::string Response::GetMsg()
+    delete[] m_output;
+    m_output = new char[raw.size() + 1];
+
+    for (int i = 0; i < raw.size(); i++)
     {
-        return m_message;
+        m_output[i] = raw[i];
     }
 
-    void Response::SetRaw(std::string _rawStr)
+    m_output[raw.size()] = 0;
+
+    return m_output;
+}
+
+void HTTP::Response::AddHeader(std::string _key, std::string _value)
+{
+    headers.emplace_back(Header(_key, _value));
+}
+
+char *HTTP::Response::GetRaw()
+{
+    delete[] m_output;
+    m_output = new char[raw.size() + 1];
+
+    for (int i = 0; i < raw.size(); i++)
     {
-        m_rawStr = _rawStr;
+        m_output[i] = raw[i];
     }
 
-    void Response::SetCode(short _code)
+    m_output[raw.size()] = 0;
+
+    return m_output;
+}
+
+char *HTTP::Response::GetMsg()
+{
+    delete m_output;
+    m_output = new char[msg.size() + 1];
+
+    for (int i = 0; i < msg.size(); i++)
     {
-        m_respCode = _code;
+        m_output[i] = msg[i];
     }
 
-    void Response::SetVersion(double _httpVersion)
+    m_output[msg.size()] = 0;
+
+    return m_output;
+}
+
+void HTTP::Response::SetRaw(char *_raw, int _len)
+{
+    raw.clear();
+
+    for (int i = 0; i < _len; i++)
     {
-        m_httpVersion = _httpVersion;
+        raw.push_back(_raw[i]);
     }
 
-    void Response::SetHeaders(std::map<std::string, std::string> _headers)
+    rawLen = _len;
+}
+
+void HTTP::Response::SetMsg(char *_msg, int _len)
+{
+    msg.clear();
+
+    for (int i = 0; i < _len; i++)
     {
-        m_headers = _headers;
+        msg.push_back(_msg[i]);
     }
 
-    void Response::SetMessage(std::string _message)
-    {
-        m_message = _message;
-    }
+    msgLen = _len;
+}
 
-    Response::~Response()
-    {
-    }
-} // namespace HTTP
+HTTP::Response::~Response()
+{
+    delete[] m_output;
+}
