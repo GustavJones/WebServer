@@ -391,10 +391,11 @@ char *HTTP::Request::GetMsg()
 void HTTP::Request::SetRaw(char *_raw, int _len)
 {
     raw.clear();
+    raw.reserve(_len);
 
     for (int i = 0; i < _len; i++)
     {
-        raw.push_back(_raw[i]);
+        raw[i] = _raw[i];
     }
 
     rawLen = _len;
@@ -403,10 +404,11 @@ void HTTP::Request::SetRaw(char *_raw, int _len)
 void HTTP::Request::SetMsg(char *_msg, int _len)
 {
     msg.clear();
+    msg.reserve(_len);
 
     for (int i = 0; i < _len; i++)
     {
-        msg.push_back(_msg[i]);
+        msg[i] = _msg[i];
     }
 
     msgLen = _len;
@@ -673,6 +675,8 @@ char *HTTP::Response::CreateRaw(const char *_responseDescription)
 
     m_output[raw.size()] = 0;
 
+    rawLen = raw.size();
+
     return m_output;
 }
 
@@ -714,10 +718,11 @@ char *HTTP::Response::GetMsg()
 void HTTP::Response::SetRaw(char *_raw, int _len)
 {
     raw.clear();
+    raw.resize(_len);
 
     for (int i = 0; i < _len; i++)
     {
-        raw.push_back(_raw[i]);
+        raw[i] = _raw[i];
     }
 
     rawLen = _len;
@@ -726,10 +731,11 @@ void HTTP::Response::SetRaw(char *_raw, int _len)
 void HTTP::Response::SetMsg(char *_msg, int _len)
 {
     msg.clear();
+    msg.resize(_len);
 
     for (int i = 0; i < _len; i++)
     {
-        msg.push_back(_msg[i]);
+        msg[i] = _msg[i];
     }
 
     msgLen = _len;

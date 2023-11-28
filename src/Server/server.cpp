@@ -5,21 +5,21 @@
 
 void HTTP::WebServer::HandleConnection(GNetworking::Socket *_clientSock)
 {
-    std::string input = _clientSock->Recv().c_str();
+    std::string input = _clientSock->Recv();
 
-    HTTP::Request req(input);
+    HTTP::Request req((char *)input.c_str(), input.length());
     std::cout << req.GetRaw() << "\n\n";
 
     // Requests
-    if (req.GetType() == HTTP::RequestType::GET)
+    if (req.type == HTTP::RequestType::GET)
     {
         HTTP::WebServer::Get(req, _clientSock);
     }
-    else if (req.GetType() == HTTP::RequestType::POST)
+    else if (req.type == HTTP::RequestType::POST)
     {
         HTTP::WebServer::Post(req, _clientSock);
     }
-    else if (req.GetType() == HTTP::RequestType::HEAD)
+    else if (req.type == HTTP::RequestType::HEAD)
     {
         HTTP::WebServer::Head(req, _clientSock);
     }
@@ -31,13 +31,13 @@ void HTTP::WebServer::Get(HTTP::Request &req, GNetworking::Socket *_clientSock)
 {
     GFiles::Path *reqPath;
 
-    if (req.GetPath() == "/")
+    if (req.path == "/")
     {
         reqPath = new GFiles::Path("index.html");
     }
     else
     {
-        reqPath = new GFiles::Path(req.GetPath().erase(0, 1));
+        reqPath = new GFiles::Path(req.path.erase(0, 1));
     }
 
     std::string pathExtension = reqPath->extension();
@@ -53,15 +53,12 @@ void HTTP::WebServer::Get(HTTP::Request &req, GNetworking::Socket *_clientSock)
         {
             std::string content = htmlPage.read();
 
-            std::map<std::string, std::string> headers;
-            headers["Content-Type"] = "text/html; charset=utf-8";
+            resp.code = 200;
+            resp.version = HTTP::Version(1, 1);
+            resp.AddHeader("Content-Type", "text/html; charset=utf-8");
+            resp.SetMsg((char *)content.c_str(), content.length());
 
-            resp.SetCode(200);
-            resp.SetVersion(1.1);
-            resp.SetHeaders(headers);
-            resp.SetMessage(content);
-
-            char *respRaw = (char *)resp.CreateRaw("OK").c_str();
+            char *respRaw = resp.CreateRaw("OK");
             _clientSock->Send(respRaw);
         }
     }
@@ -73,56 +70,53 @@ void HTTP::WebServer::Get(HTTP::Request &req, GNetworking::Socket *_clientSock)
         {
             std::string content = cssFile.read();
 
-            std::map<std::string, std::string> headers;
-            headers["Content-Type"] = "text/css";
+            resp.code = 200;
+            resp.version = HTTP::Version(1, 1);
+            resp.AddHeader("Content-Type", "text/css");
+            resp.SetMsg((char *)content.c_str(), content.length());
 
-            resp.SetCode(200);
-            resp.SetVersion(1.1);
-            resp.SetHeaders(headers);
-            resp.SetMessage(content);
-
-            char *respRaw = (char *)resp.CreateRaw("OK").c_str();
+            char *respRaw = resp.CreateRaw("OK");
             _clientSock->Send(respRaw);
         }
     }
     else if (pathExtension == "ico")
     {
         // Ico Return
-        GFiles::File icoFile(reqPath->path);
+        GFiles::File icoFile(reqPath->path, true);
         if (icoFile.exists())
         {
             char *content = icoFile.read();
-
-            std::map<std::string, std::string> headers;
-            headers["Content-Type"] = "image/x-icon";
-
-            resp.SetCode(200);
-            resp.SetVersion(1.1);
-            resp.SetHeaders(headers);
-            resp.SetMessage(content);
-
             contentSize = icoFile.size();
-            _clientSock->Send((char *)resp.CreateRaw("OK").c_str(), contentSize);
+
+            resp.code = 200;
+            resp.version = HTTP::Version(1, 1);
+            resp.AddHeader("Content-Type", "image/x-icon");
+            resp.AddHeader("Content-Length", std::to_string(contentSize));
+            resp.SetMsg(content, contentSize);
+
+            char *output = resp.CreateRaw("OK");
+
+            _clientSock->Send(output, resp.rawLen);
         }
     }
     else if (pathExtension == "png")
     {
         // PNG Return
-        GFiles::File pngFile(reqPath->path);
+        GFiles::File pngFile(reqPath->path, true);
         if (pngFile.exists())
         {
             char *content = pngFile.read();
-
-            std::map<std::string, std::string> headers;
-            headers["Content-Type"] = "image/png";
-
-            resp.SetCode(200);
-            resp.SetVersion(1.1);
-            resp.SetHeaders(headers);
-            resp.SetMessage(content);
-
             contentSize = pngFile.size();
-            _clientSock->Send((char *)resp.CreateRaw("OK").c_str(), contentSize);
+
+            resp.code = 200;
+            resp.version = HTTP::Version(1, 1);
+            resp.AddHeader("Content-Type", "image/png");
+            resp.AddHeader("Content-Length", std::to_string(contentSize));
+            resp.SetMsg(content, contentSize);
+
+            char *output = resp.CreateRaw("OK");
+
+            _clientSock->Send(output, resp.rawLen);
         }
     }
 
