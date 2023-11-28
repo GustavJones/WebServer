@@ -10,6 +10,12 @@ void HTTP::WebServer::HandleConnection(GNetworking::Socket *_clientSock)
     HTTP::Request req((char *)input.c_str(), input.length());
     std::cout << req.GetRaw() << "\n\n";
 
+    while (req.path.find("%20") != -1)
+    {
+        int pos = req.path.find("%20");
+        req.path.replace(req.path.begin() + pos, req.path.begin() + pos + 3, " ");
+    }
+
     // Requests
     if (req.type == HTTP::RequestType::GET)
     {
@@ -119,6 +125,26 @@ void HTTP::WebServer::Get(HTTP::Request &req, GNetworking::Socket *_clientSock)
             _clientSock->Send(output, resp.rawLen);
         }
     }
+    else if (pathExtension == "jpg")
+    {
+        // JPG Return
+        GFiles::File jpgFile(reqPath->path, true);
+        if (jpgFile.exists())
+        {
+            char *content = jpgFile.read();
+            contentSize = jpgFile.size();
+
+            resp.code = 200;
+            resp.version = HTTP::Version(1, 1);
+            resp.AddHeader("Content-Type", "image/jpg");
+            resp.AddHeader("Content-Length", std::to_string(contentSize));
+            resp.SetMsg(content, contentSize);
+
+            char *output = resp.CreateRaw("OK");
+
+            _clientSock->Send(output, resp.rawLen);
+        }
+    }
 
     delete reqPath;
     _clientSock->Close();
@@ -140,11 +166,11 @@ int main(int argc, char const *argv[])
     address = "10.0.0.150";
     port = "80";
 
-    // std::cout << "Enter server address: ";
-    // std::getline(std::cin, address);
+    std::cout << "Enter server address: ";
+    std::getline(std::cin, address);
 
-    // std::cout << "Enter server port: ";
-    // std::getline(std::cin, port);
+    std::cout << "Enter server port: ";
+    std::getline(std::cin, port);
 
     HTTP::WebServer server(address, std::stoi(port), 3);
     return 0;
