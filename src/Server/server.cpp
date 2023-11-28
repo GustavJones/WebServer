@@ -5,89 +5,146 @@
 
 void HTTP::WebServer::HandleConnection(GNetworking::Socket *_clientSock)
 {
-    std::string htmlPage;
     std::string input = _clientSock->Recv();
-    try
+
+    HTTP::Request req((char *)input.c_str(), input.length());
+    std::cout << req.GetRaw() << "\n\n";
+
+    // Requests
+    if (req.type == HTTP::RequestType::GET)
     {
-        Request req(input);
+        HTTP::WebServer::Get(req, _clientSock);
+    }
+    else if (req.type == HTTP::RequestType::POST)
+    {
+        HTTP::WebServer::Post(req, _clientSock);
+    }
+    else if (req.type == HTTP::RequestType::HEAD)
+    {
+        HTTP::WebServer::Head(req, _clientSock);
+    }
+}
 
-        std::cout << req.GetRaw() << "\n\n";
+// Get Requests
 
-        if (req.GetType() == HTTP::RequestType::GET)
+void HTTP::WebServer::Get(HTTP::Request &req, GNetworking::Socket *_clientSock)
+{
+    GFiles::Path *reqPath;
+
+    if (req.path == "/")
+    {
+        reqPath = new GFiles::Path("index.html");
+    }
+    else
+    {
+        reqPath = new GFiles::Path(req.path.erase(0, 1));
+    }
+
+    std::string pathExtension = reqPath->extension();
+
+    HTTP::Response resp;
+    int contentSize;
+
+    if (pathExtension == "html")
+    {
+        // HTML return
+        GFiles::File htmlPage(reqPath->path);
+        if (htmlPage.exists())
         {
-            if (req.GetPath() == "/" || req.GetPath() == "/index.html")
-            {
-                GFiles::File htmlFile(GFiles::Path("index.html"));
+            std::string content = htmlPage.read();
 
-                char *buffer = htmlFile.read();
-                if (buffer != nullptr)
-                {
-                    htmlPage = (std::string)buffer;
-                }
-                else
-                {
-                    htmlPage = "";
-                }
+            resp.code = 200;
+            resp.version = HTTP::Version(1, 1);
+            resp.AddHeader("Content-Type", "text/html; charset=utf-8");
+            resp.SetMsg((char *)content.c_str(), content.length());
 
-                if (htmlFile.exists())
-                {
-                    std::cout << "File Exists" << '\n'
-                              << '\n';
-                }
-            }
-            else
-            {
-                std::string path = req.GetPath();
-                GFiles::File htmlFile(GFiles::Path(path.erase(0, 1)));
-
-                char *buffer = htmlFile.read();
-                if (buffer != nullptr)
-                {
-                    htmlPage = (std::string)buffer;
-                }
-                else
-                {
-                    htmlPage = "";
-                }
-
-                if (htmlFile.exists())
-                {
-                    std::cout << "File Exists" << '\n'
-                              << '\n';
-                }
-            }
-
-            Response resp;
-            resp.SetVersion(1.0);
-            if (htmlPage != "")
-            {
-                resp.SetCode(200);
-                resp.SetMessage(htmlPage);
-                _clientSock->Send(resp.CreateRaw("OK"));
-            }
-            else
-            {
-                resp.SetCode(404);
-                _clientSock->Send(resp.CreateRaw("Not Found"));
-            }
-            _clientSock->Close();
+            char *respRaw = resp.CreateRaw("OK");
+            _clientSock->Send(respRaw);
         }
     }
-    catch (const std::exception &e)
+    else if (pathExtension == "css")
     {
-        std::cerr << e.what() << '\n';
+        // CSS Return
+        GFiles::File cssFile(reqPath->path);
+        if (cssFile.exists())
+        {
+            std::string content = cssFile.read();
+
+            resp.code = 200;
+            resp.version = HTTP::Version(1, 1);
+            resp.AddHeader("Content-Type", "text/css");
+            resp.SetMsg((char *)content.c_str(), content.length());
+
+            char *respRaw = resp.CreateRaw("OK");
+            _clientSock->Send(respRaw);
+        }
     }
+    else if (pathExtension == "ico")
+    {
+        // Ico Return
+        GFiles::File icoFile(reqPath->path, true);
+        if (icoFile.exists())
+        {
+            char *content = icoFile.read();
+            contentSize = icoFile.size();
+
+            resp.code = 200;
+            resp.version = HTTP::Version(1, 1);
+            resp.AddHeader("Content-Type", "image/x-icon");
+            resp.AddHeader("Content-Length", std::to_string(contentSize));
+            resp.SetMsg(content, contentSize);
+
+            char *output = resp.CreateRaw("OK");
+
+            _clientSock->Send(output, resp.rawLen);
+        }
+    }
+    else if (pathExtension == "png")
+    {
+        // PNG Return
+        GFiles::File pngFile(reqPath->path, true);
+        if (pngFile.exists())
+        {
+            char *content = pngFile.read();
+            contentSize = pngFile.size();
+
+            resp.code = 200;
+            resp.version = HTTP::Version(1, 1);
+            resp.AddHeader("Content-Type", "image/png");
+            resp.AddHeader("Content-Length", std::to_string(contentSize));
+            resp.SetMsg(content, contentSize);
+
+            char *output = resp.CreateRaw("OK");
+
+            _clientSock->Send(output, resp.rawLen);
+        }
+    }
+
+    delete reqPath;
+    _clientSock->Close();
+}
+
+void HTTP::WebServer::Post(HTTP::Request &req, GNetworking::Socket *_clientSock)
+{
+    _clientSock->Close();
+}
+
+void HTTP::WebServer::Head(HTTP::Request &req, GNetworking::Socket *_clientSock)
+{
+    _clientSock->Close();
 }
 
 int main(int argc, char const *argv[])
 {
     std::string address, port;
+    address = "10.0.0.150";
+    port = "80";
 
-    std::cout << "Enter server address: ";
-    std::getline(std::cin, address);
+    // std::cout << "Enter server address: ";
+    // std::getline(std::cin, address);
 
-    std::cout << "Enter server port: ";
-    std::getline(std::cin, port);
+    // std::cout << "Enter server port: ";
+    // std::getline(std::cin, port);
 
     HTTP::WebServer server(address, std::stoi(port), 3);
     return 0;

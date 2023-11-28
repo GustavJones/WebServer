@@ -5,6 +5,8 @@
 
 namespace HTTP
 {
+    typedef std::pair<std::string, std::string> Header;
+
     enum RequestType
     {
         GET,
@@ -13,36 +15,42 @@ namespace HTTP
         UNKNOWN
     };
 
+    class Version
+    {
+    public:
+        Version();
+        Version(int _major, int _minor);
+
+        int major, minor;
+        ~Version();
+    };
+
     class Request
     {
     private:
-        std::string m_rawStr;
-        RequestType m_reqType;
-        std::string m_uriPath;
-        double m_httpVersion;
-        std::map<std::string, std::string> m_headers;
-        std::string m_message;
+        char *m_output;
 
     public:
+        Request(char *_raw, int _len);
         Request();
-        Request(std::string _rawStr);
 
-        std::string CreateRaw();
+        char *CreateRaw();
         void AddHeader(std::string _key, std::string _value);
 
-        std::string GetRaw();
-        RequestType GetType();
-        std::string GetPath();
-        double GetVersion();
-        std::map<std::string, std::string> GetHeaders();
-        std::string GetMsg();
+        std::vector<char> raw;
+        int rawLen;
+        RequestType type;
+        std::string path;
+        Version version;
+        std::vector<Header> headers;
+        std::vector<char> msg;
+        int msgLen;
 
-        void SetRaw(std::string _rawStr);
-        void SetType(RequestType _reqType);
-        void SetPath(std::string _uriPath);
-        void SetVersion(double _httpVersion);
-        void SetHeaders(std::map<std::string, std::string> _headers);
-        void SetMessage(std::string _message);
+        char *GetRaw();
+        char *GetMsg();
+
+        void SetRaw(char *_raw, int _len);
+        void SetMsg(char *_msg, int _len);
 
         ~Request();
     };
@@ -50,30 +58,28 @@ namespace HTTP
     class Response
     {
     private:
-        std::string m_rawStr;
-        short m_respCode;
-        double m_httpVersion;
-        std::map<std::string, std::string> m_headers;
-        std::string m_message;
+        char *m_output;
 
     public:
+        Response(char *_raw, int _len);
         Response();
-        Response(std::string _rawStr);
 
-        std::string CreateRaw(std::string _responseCodeMessage);
+        char *CreateRaw(const char *_responseDescription);
         void AddHeader(std::string _key, std::string _value);
 
-        std::string GetRaw();
-        short GetCode();
-        double GetVersion();
-        std::map<std::string, std::string> GetHeaders();
-        std::string GetMsg();
+        std::vector<char> raw;
+        int rawLen;
+        int code;
+        Version version;
+        std::vector<Header> headers;
+        std::vector<char> msg;
+        int msgLen;
 
-        void SetRaw(std::string _rawStr);
-        void SetCode(short _code);
-        void SetVersion(double _httpVersion);
-        void SetHeaders(std::map<std::string, std::string> _headers);
-        void SetMessage(std::string _message);
+        char *GetRaw();
+        char *GetMsg();
+
+        void SetRaw(char *_raw, int _len);
+        void SetMsg(char *_msg, int _len);
 
         ~Response();
     };
